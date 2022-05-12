@@ -67,9 +67,10 @@ namespace ProteoformSuiteInternal
             else if(Sweet.lollipop.cystag_labeled)
             {
                 this.exact_cysteine_count = Math.Abs(neuCodeHeavy.weighted_monoisotopic_mass - firstCorrection) / Lollipop.CYSTAG_MASS_SHIFT;
-                this.cysteine_count = Math.Abs(Convert.ToInt32(Math.Round((neuCodeHeavy.weighted_monoisotopic_mass - firstCorrection) / Lollipop.CYSTAG_MASS_SHIFT, 0, MidpointRounding.AwayFromZero)));
+                this.lysine_count = Math.Abs(Convert.ToInt32(Math.Round((neuCodeHeavy.weighted_monoisotopic_mass - firstCorrection) / Lollipop.NEUCODE_LYSINE_MASS_SHIFT, 0, MidpointRounding.AwayFromZero)));
 
-                this.weighted_monoisotopic_mass = neuCodeLight.weighted_monoisotopic_mass;
+                double neuCodeCorrection = Math.Round((this.lysine_count * 0.1667 - 0.4), 0, MidpointRounding.AwayFromZero) * Lollipop.MONOISOTOPIC_UNIT_MASS;
+                this.weighted_monoisotopic_mass = neuCodeLight.weighted_monoisotopic_mass + neuCodeCorrection;
             }
             this.intensity_ratio = light_intensity_sum_olcs / heavy_intensity_sum_olcs; //ratio of overlapping charge states
             
@@ -93,7 +94,7 @@ namespace ProteoformSuiteInternal
         public void set_accepted()
         {
             accepted = (((lysine_count >= Sweet.lollipop.min_lysine_ct && lysine_count <= Sweet.lollipop.max_lysine_ct) && Sweet.lollipop.neucode_labeled) || 
-                ((cysteine_count >= Sweet.lollipop.min_cysteine_ct && cysteine_count <= Sweet.lollipop.max_cysteine_ct) && Sweet.lollipop.cystag_labeled)
+                ((lysine_count >= Sweet.lollipop.min_cysteine_ct && lysine_count <= Sweet.lollipop.max_cysteine_ct) && Sweet.lollipop.cystag_labeled)
                 && intensity_ratio >= Convert.ToDouble(Sweet.lollipop.min_intensity_ratio) && intensity_ratio <= Convert.ToDouble(Sweet.lollipop.max_intensity_ratio));
         }
 

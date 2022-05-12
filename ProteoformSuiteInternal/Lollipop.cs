@@ -182,7 +182,12 @@ namespace ProteoformSuiteInternal
         {
             foreach (InputFile inputFile in get_files(input_files, Purpose.Identification).ToList())
             {
-                foreach(Component c1 in inputFile.reader.final_components)
+                foreach (string scan_range in inputFile.reader.scan_ranges)
+                {
+                    find_neucode_pairs(inputFile.reader.final_components.Where(c => c.min_scan + "-" + c.max_scan == scan_range), raw_neucode_pairs, heavy_hashed_pairs);
+                }
+                /*
+                foreach (Component c1 in inputFile.reader.final_components)
                 {
                     List<Component> components_in_rt_range = new List<Component>();
                     components_in_rt_range.Add(c1);
@@ -198,8 +203,9 @@ namespace ProteoformSuiteInternal
                     }
                     find_neucode_pairs(components_in_rt_range, raw_neucode_pairs, heavy_hashed_pairs);
                 }
+                */
             }
-            raw_neucode_pairs = findMissing_ExtraLabels(raw_neucode_pairs).ToList();
+            //raw_neucode_pairs = findMissing_ExtraLabels(raw_neucode_pairs).ToList();
         }
 
         #endregion RAW EXPERIMENTAL COMPONENTS
@@ -376,20 +382,12 @@ namespace ProteoformSuiteInternal
                                 double lower_intensity = NeuCodePair.calculate_sum_intensity_olcs(lower_component.charge_states, overlapping_charge_states);
                                 double higher_intensity = NeuCodePair.calculate_sum_intensity_olcs(higher_component.charge_states, overlapping_charge_states);
                                 bool light_is_lower = true; //calculation different depending on if neucode light is the heavier/lighter component
-                                if (neucode_labeled && lower_intensity > 0 && higher_intensity > 0)
+
+                                if ((neucode_labeled || cystag_labeled) && lower_intensity > 0 && higher_intensity > 0)
                                 {
                                     NeuCodePair pair = lower_intensity > higher_intensity ?
                                         new NeuCodePair(lower_component, lower_intensity, higher_component, higher_intensity, mass_difference, overlapping_charge_states, light_is_lower) : //lower mass is neucode light
                                         new NeuCodePair(higher_component, higher_intensity, lower_component, lower_intensity, mass_difference, overlapping_charge_states, !light_is_lower); //higher mass is neucode light
-
-                                    if (pair.weighted_monoisotopic_mass <= pair.neuCodeHeavy.weighted_monoisotopic_mass + MONOISOTOPIC_UNIT_MASS) // the heavy should be at higher mass. Max allowed is 1 dalton less than light.
-                                    {
-                                        lock (pairsInScanRange) pairsInScanRange.Add(pair);
-                                    }
-                                }
-                                else if (cystag_labeled && lower_intensity > 0 && higher_intensity > 0)
-                                {
-                                    NeuCodePair pair = new NeuCodePair(lower_component, lower_intensity, higher_component, higher_intensity, mass_difference, overlapping_charge_states, light_is_lower);
 
                                     if (pair.weighted_monoisotopic_mass <= pair.neuCodeHeavy.weighted_monoisotopic_mass + MONOISOTOPIC_UNIT_MASS) // the heavy should be at higher mass. Max allowed is 1 dalton less than light.
                                     {

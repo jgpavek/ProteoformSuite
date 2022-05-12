@@ -53,8 +53,8 @@ namespace ProteoformSuiteInternal
             {
                 foreach (Proteoform pf2 in pfs2)
                 {
-                    if (!pfs2_cysteine_lookup.TryGetValue(pf2.cysteine_count, out List<Proteoform> same_cysteine_ct)) { pfs2_cysteine_lookup.Add(pf2.cysteine_count, new List<Proteoform> { pf2 }); }
-                    else { same_cysteine_ct.Add(pf2); }
+                    if (!pfs2_lysine_lookup.TryGetValue(pf2.lysine_count, out List<Proteoform> same_lysine_ct)) { pfs2_lysine_lookup.Add(pf2.lysine_count, new List<Proteoform> { pf2 }); }
+                    else { same_lysine_ct.Add(pf2); }
                 }
             }
 
@@ -87,23 +87,17 @@ namespace ProteoformSuiteInternal
                          relation_type == ProteoformComparison.ExperimentalDecoy ||
                          relation_type == ProteoformComparison.ExperimentalExperimental))
                     {
-                        double cysteine_count_tolerance = 0.75;
-                        List<Proteoform> pfs2_acceptable_cysteine_count = pfs2_cysteine_lookup
-                            .Where(kv => Math.Abs(pf1.exact_cysteine_count - kv.Key) <= cysteine_count_tolerance)
-                            .SelectMany(kv => kv.Value).ToList();
-
-                        pf1.candidate_relatives = pfs2_acceptable_cysteine_count != null
-                            ? pfs2_acceptable_cysteine_count.Where(pf2 => allowed_relation(pf1, pf2, relation_type)).ToList()
+                        pfs2_lysine_lookup.TryGetValue(pf1.lysine_count, out List<Proteoform> pfs2_same_lysine_count);
+                        pf1.candidate_relatives = pfs2_same_lysine_count != null
+                            ? pfs2_same_lysine_count.Where(pf2 => allowed_relation(pf1, pf2, relation_type)).ToList()
                             : new List<Proteoform>();
-
-                        pf1.candidate_relatives.OrderByDescending(c => c.cysteine_count).ToList();
                     }
                     else if(Sweet.lollipop.cystag_labeled && relation_type == ProteoformComparison.ExperimentalFalse)
                     {
-                        List<Proteoform> pfs2_cysteines_outside_tolerance = pfs2_cysteine_lookup
-                            .Where(kv => Math.Abs(pf1.cysteine_count - kv.Key) > Sweet.lollipop.maximum_missed_cysteines)
+                        List<Proteoform> pfs2_lysines_outside_tolerance = pfs2_lysine_lookup
+                            .Where(kv => Math.Abs(pf1.lysine_count - kv.Key) > Sweet.lollipop.maximum_missed_lysines)
                             .SelectMany(kv => kv.Value).ToList();
-                        pf1.candidate_relatives = pfs2_cysteines_outside_tolerance
+                        pf1.candidate_relatives = pfs2_lysines_outside_tolerance
                             .Where(pf2 => allowed_relation(pf1, pf2, relation_type)).ToList();
                     }
                     //Unlabeled

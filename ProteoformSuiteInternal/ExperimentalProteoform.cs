@@ -109,6 +109,7 @@ namespace ProteoformSuiteInternal
                 this.aggregated.AddRange(candidate_observations.Where(p => includes(p, this.root)));
                 this.calculate_properties();
                 this.root = this.aggregated.OrderByDescending(a => a.intensity_sum).FirstOrDefault(); //reset root to component with max intensity
+                int integer = 123;
             }
             else if (cystag_labeled)
             {
@@ -116,13 +117,14 @@ namespace ProteoformSuiteInternal
                 ncRoot.weighted_monoisotopic_mass = temp.agg_mass;
                 ncRoot.intensity_sum = temp.agg_intensity;
                 ncRoot.rt_apex = temp.agg_rt;
-                ncRoot.cysteine_count = temp.cysteine_count;
+                ncRoot.lysine_count = temp.lysine_count;
                 ncRoot.exact_cysteine_count = temp.exact_cysteine_count;
 
                 this.root = ncRoot;
                 this.aggregated.AddRange(candidate_observations.Where(p => includes(p, this.root)));
                 this.calculate_properties();
                 this.root = this.aggregated.OrderByDescending(a => a.intensity_sum).FirstOrDefault(); //reset root to component with max intensity
+                int integer = 123;
             }
             else
             {
@@ -271,7 +273,8 @@ namespace ProteoformSuiteInternal
         public bool includes(IAggregatable candidate, IAggregatable root)
         {
             return tolerable_rt(candidate, root.rt_apex) && tolerable_mass(candidate.weighted_monoisotopic_mass, root.weighted_monoisotopic_mass)
-                && (candidate as NeuCodePair == null || (tolerable_lysCt(candidate as NeuCodePair, (root as NeuCodePair).lysine_count) || tolerable_cysCt(candidate as NeuCodePair, (root as NeuCodePair).cysteine_count)));
+                && (candidate as NeuCodePair == null || ((Sweet.lollipop.neucode_labeled && tolerable_lysCt(candidate as NeuCodePair, (root as NeuCodePair).lysine_count)) || 
+                (Sweet.lollipop.cystag_labeled && tolerable_lysCt(candidate as NeuCodePair, (root as NeuCodePair).lysine_count))));
         }
 
         public bool includes_neucode_component(Component candidate, ExperimentalProteoform root, bool light)
@@ -284,7 +287,7 @@ namespace ProteoformSuiteInternal
             }
             else if(Sweet.lollipop.cystag_labeled)
             {
-                hv_corrected_mass += root.cysteine_count * Lollipop.CYSTAG_MASS_SHIFT;
+                hv_corrected_mass += root.lysine_count * Lollipop.NEUCODE_LYSINE_MASS_SHIFT;
             }
             return tolerable_rt(candidate, root.agg_rt) && tolerable_neucode_mass(candidate, lt_corrected_mass, hv_corrected_mass, light);
         }

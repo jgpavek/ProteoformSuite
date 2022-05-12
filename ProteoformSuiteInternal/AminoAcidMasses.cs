@@ -16,7 +16,7 @@ namespace ProteoformSuiteInternal
             
             if(cystag_labeled)
             {
-                aaMasses.Add('C', 325.16816);
+                aaMasses.Add('C', 160.030649); //Match to alkylated cysteine mass for NC-Lysine adaptation, since those samples were alkylated.
             }
             else if (cBn)
             {
@@ -32,7 +32,7 @@ namespace ProteoformSuiteInternal
             aaMasses.Add('H', 137.058912);
             aaMasses.Add('I', 113.084064);
             aaMasses.Add('L', 113.084064);
-            if (neucode_labeled)
+            if (neucode_labeled || cystag_labeled)
             {
                 aaMasses.Add('K', 136.109162);
             }

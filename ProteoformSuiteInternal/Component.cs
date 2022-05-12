@@ -204,17 +204,19 @@ namespace ProteoformSuiteInternal
         {
             foreach(ChargeState cs1 in cpToMerge.charge_states)
             {
-                bool matched = false;
+                //bool matched = false;
                 foreach(ChargeState cs2 in this.charge_states)
                 {
                     if(cs1.charge_count == cs2.charge_count)
                     {
                         cs2.mergeTheseChargeStates(cs1);
-                        matched = true;
+                        //matched = true;
                     }
                 }
+                /*
                 if (!matched)
                     this.charge_states.Add(cs1);
+                */
             }
             this.calculate_properties();
             return this;
