@@ -383,7 +383,7 @@ namespace ProteoWPFSuite
                 if (property_name == nameof(PTMDescription)) { return false; }
                 if (property_name == nameof(TheoreticalDescription)) { return false; }
             }
-            if (property_name == nameof(LysineCount)) return Sweet.lollipop.neucode_labeled;
+            if (property_name == nameof(LysineCount)) return Sweet.lollipop.cystag_labeled;
             if (property_name == nameof(CysteineCount)) return Sweet.lollipop.cystag_labeled;
             return current;
         }

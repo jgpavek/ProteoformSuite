@@ -167,7 +167,7 @@ namespace ProteoWPFSuite
 
         private static bool visible(string property_name, bool current)
         {
-            if(property_name == nameof(lysine_count)) { return Sweet.lollipop.neucode_labeled; }
+            if(property_name == nameof(lysine_count)) { return Sweet.lollipop.cystag_labeled; }
             if(property_name == nameof(cysteine_count)) { return Sweet.lollipop.cystag_labeled; }
             return current;
         }
