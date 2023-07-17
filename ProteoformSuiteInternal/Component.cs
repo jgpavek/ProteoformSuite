@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Chemistry;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -119,6 +120,32 @@ namespace ProteoformSuiteInternal
             this.intensity_sum = intensity_reported;
             this.accepted = true;
             this.charge_states = new List<ChargeState>();
+        }
+
+        public Component(string[] row, InputFile input_file)
+        {
+            this.input_file = input_file;
+            this.id = input_file.UniqueId.ToString() + "_" + row[0];
+            this.reported_monoisotopic_mass = Convert.ToDouble(row[2]);
+            this.weighted_monoisotopic_mass = Convert.ToDouble(row[2]);
+            this.intensity_reported = Convert.ToDouble(row[8]);
+            this.num_detected_intervals = -1;
+            this.reported_delta_mass = -1;
+            this.relative_abundance = -1;
+            this.fract_abundance = -1;
+            this.min_scan = 1;
+            this.max_scan = 1;
+            this.min_rt = Convert.ToDouble(row[5]) / 60;
+            this.max_rt = Convert.ToDouble(row[6]) / 60;
+            this.rt_apex = Convert.ToDouble(row[8]) / 60;
+            this.intensity_sum = intensity_reported;
+            this.accepted = true;
+            this.charge_states = new List<ChargeState>();
+            int chargeCount = Convert.ToInt32(row[14]);
+            for(int i = Convert.ToInt32(row[12] ); i<= Convert.ToInt32(row[13] ); i++)
+            {
+                this.charge_states.Add(new ChargeState(i, this.intensity_reported / chargeCount, this.reported_monoisotopic_mass.ToMz(i)));
+            }
         }
 
         #endregion Constructors

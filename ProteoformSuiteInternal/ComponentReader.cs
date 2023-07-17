@@ -163,6 +163,22 @@ namespace ProteoformSuiteInternal
                         add_component(c);
                     }
                 }
+                else if (row.Length == 19)
+                {
+                    Component c = new Component(row, file);
+                    c.calculate_properties();
+                    if (acceptable_component(c))
+                    {
+                        double IC = Convert.ToDouble(row[14]);
+                        double CC = Convert.ToDouble(row[15]);
+                        if (IC < Sweet.lollipop.minIC || CC < Sweet.lollipop.minCC)
+                        {
+                            continue;
+                        }
+
+                        add_component(c);
+                    }
+                }
             }
 
             unprocessed_components += raw_components_in_file.Count;

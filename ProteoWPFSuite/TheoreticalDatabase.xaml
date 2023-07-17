@@ -113,6 +113,7 @@
                             </WindowsFormsHost>
                         </Grid>
                         <CheckBox Margin="5 5 0 0" x:Name="cb_limitLargePtmSets" Content="Three or More Mods of a Kind Only" IsChecked="True" Checked="cb_limitLargePtmSets_CheckedChanged" Unchecked="cb_limitLargePtmSets_CheckedChanged"></CheckBox>
+                        <CheckBox Margin="5 5 0 0" x:Name="cb_Atlas" Content="Database File is Proteoform Atlas" IsChecked="False" Checked="cb_Atlas_CheckChanged" Unchecked="cb_Atlas_CheckChanged"></CheckBox>
                         <Label Content="Modification Types to Exclude:"></Label>
                         <TextBox x:Name="tb_modTypesToExclude" TextChanged="tb_modTypesToExclude_TextChanged">Metal,PeptideTermMod,TrypticProduct,TrypsinDigestedMod</TextBox>
                         <!--<Button Height="50" VerticalAlignment="Stretch" Margin="0 10 0 0" x:Name="btn_Make_Databases" Content="Time to make the databases" Click="btn_Make_Databases_Click"></Button>-->

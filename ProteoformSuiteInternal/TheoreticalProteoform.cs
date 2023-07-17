@@ -61,6 +61,59 @@ namespace ProteoformSuiteInternal
             bottom_up_PSMs = get_possible_PSMs(accession, ptm_set, begin, end, false);
         }
 
+        public TheoreticalProteoform(TheoreticalProteoform p, string sequence)
+            : base(p.accession, p.unmodified_mass + p.ptm_set.mass, p.lysine_count, p.is_target)
+        {
+            this.linked_proteoform_references = new List<Proteoform>();
+            this.accession = p.accession;
+            this.description = p.description;
+            this.name = p.name;
+            this.fragment = p.fragment;
+            this.begin = p.begin;
+            this.end = p.end;
+            this.sequence = sequence;
+            this.gene_name = p.gene_name;
+            this.ptm_set = ptm_set;
+            this.unmodified_mass = CalculateProteoformMass(sequence, new List<Ptm>());
+            this.contaminant = p.contaminant;
+            this.modified_mass = CalculateProteoformMass(sequence, p.ptm_set.ptm_combination);
+            bottom_up_PSMs = get_possible_PSMs(p.accession, p.ptm_set, p.begin, p.end, false);
+        }
+
+        public TheoreticalProteoform(string line)
+            : base(line.Split('\t')[1])
+        {
+            var split = line.Split('\t');
+            this.accession = split[1];
+            List<Tuple<string, string>> geneNames = new List<Tuple<string, string>>();
+            var geneNameSplit = split[8].Split(' ');
+            int totalGeneNames = geneNameSplit.Count() / 2;
+            for(int i = 0;i< totalGeneNames;i++)
+            {
+                geneNames.Add(new Tuple<string, string>(geneNameSplit[i*2], geneNameSplit[(i*2) + 1]));
+            }
+            this.gene_name = new GeneName(geneNames);
+            var descriptionSplit = split[2].Split('|');
+            if(descriptionSplit.Length == 2)
+            {
+                this.description = descriptionSplit[0];
+                this.fragment = descriptionSplit[1];
+            }
+            else if(descriptionSplit.Length == 1)
+            {
+                this.description = descriptionSplit[0];
+                this.fragment = descriptionSplit[0];
+            }
+            this.name = split[3];
+            this.begin = Convert.ToInt32(split[6]);
+            this.end = Convert.ToInt32(split[7]);
+            this.sequence = split[4];
+            this.ptm_set = new PtmSet(ParseFullSequence(split[5]));
+            this.modified_mass = CalculateProteoformMass(this.sequence, ptm_set.ptm_combination);
+            this.unmodified_mass = CalculateProteoformMass(sequence, new List<Ptm>());
+            this.lysine_count = sequence.Count(c => c== 'K');
+        }
+
         #endregion Public Constructor
 
         #region Public Method
@@ -110,6 +163,44 @@ namespace ProteoformSuiteInternal
             //int modeMassIndex = Array.IndexOf(intensities, max);
             //return masses[modeMassIndex];
             return formula.AverageMass;
+        }
+
+        public List<Ptm> ParseFullSequence(string fullSequence)
+        {
+            var parseSplit = fullSequence.Split('[', ']');
+            if (parseSplit.Length == 1)
+                return new List<Ptm>();
+            else
+            {
+                List<Ptm> ptms = new List<Ptm>();
+
+                double modCount = Math.Floor((double)(parseSplit.Length / 2));
+
+                for(int i = 0;i<modCount;i++)
+                {
+                    int modLocalization = 1 + (begin - 1);
+                    int modIndex = (2 * i) + 1;
+                    for(int j = 0;j<modIndex;j++)
+                    {
+                        modLocalization += parseSplit[j].Length;
+                    }
+
+                    string mod = parseSplit[(2 * i) + 1];
+                    var modSplit = mod.Split(':');
+                    foreach(Modification modification in Sweet.lollipop.theoretical_database.all_mods_with_mass)
+                    {
+                        if(modification.ModificationType == modSplit[0] && modification.IdWithMotif == modSplit[1])
+                        {
+                            if(modification.ModificationType != "Common Fixed")
+                            {
+                                ptms.Add(new Ptm(modLocalization, modification));
+                                break;
+                            }
+                        }
+                    }
+                }
+                return ptms;
+            }
         }
 
         #endregion Public Method

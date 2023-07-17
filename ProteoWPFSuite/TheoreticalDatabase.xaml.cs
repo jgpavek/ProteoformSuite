@@ -434,5 +434,10 @@ namespace ProteoWPFSuite
             // Reference: https://stackoverflow.com/questions/3659858/in-c-sharp-wpf-why-is-my-tabcontrols-selectionchanged-event-firing-too-often
             e.Handled = true;
         }
+
+        private void cb_Atlas_CheckChanged(object sender, EventArgs e)
+        {
+            Sweet.lollipop.proteoformAtlas = (bool)cb_Atlas.IsChecked;
+        }
     }
 }

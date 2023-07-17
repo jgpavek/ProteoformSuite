@@ -50,7 +50,7 @@ namespace ProteoformSuiteInternal
         {
             "Deconvolution Results for Identification (.xlsx, .tsv, .txt)",
             "Deconvolution Results for Quantification (.xlsx, .tsv. txt)",
-            "Protein Databases (.xml, .xml.gz, .fasta)",
+            "Protein Databases (.xml, .xml.gz, .fasta, .tsv)",
             "Top-Down Hit Results (.xlsx, .psmtsv )",
             "Spectra Files (.raw, .mzML)",
             "Uncalibrated Deconvolution Results (.xlsx, .tsv)",
@@ -63,7 +63,7 @@ namespace ProteoformSuiteInternal
         {
             new List<string> { ".xlsx", ".tsv", ".txt" },
             new List<string> { ".xlsx", ".tsv", ".txt"  },
-            new List<string> { ".xml", ".gz", ".fasta" },
+            new List<string> { ".xml", ".gz", ".fasta", ".tsv" },
             new List<string> { ".xlsx" , ".psmtsv"},
             new List<string> {".raw", ".mzML", ".mzml", ".MZML"},
             new List<string> { ".xlsx", ".tsv" },
@@ -76,7 +76,7 @@ namespace ProteoformSuiteInternal
         {
             "Deconvolution Files (*.xlsx, *.tsv, *.txt) | *.xlsx;*.tsv;*.txt",
             "Deconvolution Files (*.xlsx, *.tsv, *.txt) | *.xlsx;*.tsv;*.txt",
-            "Protein Databases (*.xml, *.xml.gz, *.fasta) | *.xml;*.xml.gz;*.fasta",
+            "Protein Databases (*.xml, *.xml.gz, *.fasta, *.tsv) | *.xml;*.xml.gz;*.fasta,*.tsv",
             "Top-Down Hit Files (*.xlsx, *.psmtsv) | *.xlsx;*.psmtsv",
             "Spectra Files (*.raw, *.mzML) | *.raw;*.mzML",
             "Deconvolution Files (*.xlsx, *.tsv) | *.xlsx;*.tsv",
@@ -823,6 +823,7 @@ namespace ProteoformSuiteInternal
 
         #region THEORETICAL DATABASE Public Fields
 
+        public bool proteoformAtlas = false;
         public bool methionine_oxidation = false;
         public bool carbamidomethylation = false;
         public bool methionine_cleavage = true;
