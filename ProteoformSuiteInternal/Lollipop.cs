@@ -51,7 +51,7 @@ namespace ProteoformSuiteInternal
             "Deconvolution Results for Identification (.xlsx, .tsv, .txt)",
             "Deconvolution Results for Quantification (.xlsx, .tsv. txt)",
             "Protein Databases (.xml, .xml.gz, .fasta)",
-            "Top-Down Hit Results (.xlsx, .psmtsv )",
+            "Top-Down Hit Results (.xlsx, .psmtsv, .tsv)",
             "Spectra Files (.raw, .mzML)",
             "Uncalibrated Deconvolution Results (.xlsx, .tsv)",
             "Uncalibrated Top-Down Hit Results (Unlabeled) (.xlsx, .psmtsv)",
@@ -64,10 +64,10 @@ namespace ProteoformSuiteInternal
             new List<string> { ".xlsx", ".tsv", ".txt" },
             new List<string> { ".xlsx", ".tsv", ".txt"  },
             new List<string> { ".xml", ".gz", ".fasta" },
-            new List<string> { ".xlsx" , ".psmtsv"},
+            new List<string> { ".xlsx" , ".psmtsv", ".tsv"},
             new List<string> {".raw", ".mzML", ".mzml", ".MZML"},
             new List<string> { ".xlsx", ".tsv" },
-            new List<string> { ".xlsx", ".psmtsv" },
+            new List<string> { ".xlsx", ".psmtsv", ".tsv" },
             new List<string> { ".psmtsv"}
 
         };
@@ -77,10 +77,10 @@ namespace ProteoformSuiteInternal
             "Deconvolution Files (*.xlsx, *.tsv, *.txt) | *.xlsx;*.tsv;*.txt",
             "Deconvolution Files (*.xlsx, *.tsv, *.txt) | *.xlsx;*.tsv;*.txt",
             "Protein Databases (*.xml, *.xml.gz, *.fasta) | *.xml;*.xml.gz;*.fasta",
-            "Top-Down Hit Files (*.xlsx, *.psmtsv) | *.xlsx;*.psmtsv",
+            "Top-Down Hit Files (*.xlsx, *.psmtsv, *.tsv) | *.xlsx;*.psmtsv;*.tsv",
             "Spectra Files (*.raw, *.mzML) | *.raw;*.mzML",
             "Deconvolution Files (*.xlsx, *.tsv) | *.xlsx;*.tsv",
-            "Top-Down Hit Files (*.xlsx, *.psmtsv) | *.xlsx;*.psmtsv",
+            "Top-Down Hit Files (*.xlsx, *.psmtsv, *.tsv) | *.xlsx;*.psmtsv;*.tsv",
             "MetaMorpheus Bottom-Up Unique Peptides (*.psmtsv) | *.psmtsv",
         };
 

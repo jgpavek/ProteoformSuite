@@ -8,6 +8,11 @@ using Chemistry;
 using Proteomics.Fragmentation;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using IO.MzML.Generated;
+using DocumentFormat.OpenXml.Office.Word;
+using System.IO;
+using DocumentFormat.OpenXml.Wordprocessing;
+using MzLibUtil;
 
 namespace ProteoformSuiteInternal
 {
@@ -34,7 +39,10 @@ namespace ProteoformSuiteInternal
                 return MetaMorpheusReader(file);
 
             }
-
+            else if (file.extension == ".tsv")
+            {
+                return ToppicReader(file);
+            }
             return new List<SpectrumMatch>();
         }
 
@@ -514,6 +522,264 @@ namespace ProteoformSuiteInternal
             return td_hits;
         }
 
+        private List<SpectrumMatch> ToppicReader(InputFile file)
+        {
+            List<Modification> toppic_mods = load_toppic_variable_mods();
+
+            //if neucode labeled, calculate neucode light theoretical AND observed mass! --> better for matching up
+            //if carbamidomethylated, add 57 to theoretical mass (already in observed mass...)
+            aaIsotopeMassList = new AminoAcidMasses(false, Sweet.lollipop.neucode_labeled)
+                .AA_Masses;
+            List<SpectrumMatch> td_hits = new List<SpectrumMatch>(); //for one line in excel file
+
+
+
+            string[] cells = Enumerable.ToArray(System.IO.File.ReadAllLines(file.complete_path));
+            int headerIdx = get_toppic_header_idx(cells);
+            string[] header = cells[headerIdx].Split('\t');
+
+            int index_q_value = Array.IndexOf(header, "E-value");
+            int index_full_sequence = Array.IndexOf(header, "Proteoform");
+            int index_filepath = Array.IndexOf(header, "Data file name");
+            int index_scan_number = Array.IndexOf(header, "Scan(s)");
+            int index_begin = Array.IndexOf(header, "First residue");
+            int index_end = Array.IndexOf(header, "Last residue");
+            int index_protein_accession = Array.IndexOf(header, "Protein accession");
+            int index_protein_name = Array.IndexOf(header, "Protein description");
+            int index_base_sequence = Array.IndexOf(header, "Database protein sequence");
+            int index_retention_time = Array.IndexOf(header, "Retention time");
+            int index_precursor_mass = Array.IndexOf(header, "Precursor mass");
+            int index_peptide_monoisotopic_mass = Array.IndexOf(header, "Proteoform mass");
+            int index_variable_mod_count = Array.IndexOf(header, "#variable PTMs");
+            int index_variable_mods = Array.IndexOf(header, "variable PTMs");
+            int index_unexpected_mod_count = Array.IndexOf(header, "#unexpected modifications");
+            int index_unexpected_mods = Array.IndexOf(header, "unexpected modifications");
+            int index_nterm_form = Array.IndexOf(header, "Protein N-terminal form");
+
+            //creates dictionary to find mods
+            Dictionary<string, Modification> mods = new Dictionary<string, Modification>();
+            foreach (var mod in Sweet.lollipop.theoretical_database.all_mods_with_mass)
+            {
+                if (!mods.ContainsKey(mod.IdWithMotif))
+                {
+                    mods.Add(mod.IdWithMotif, mod);
+                }
+            }
+
+            List<Modification> unexpected_modifications = new List<Modification>();
+
+            Parallel.For(headerIdx+1, cells.Length, index =>
+            {
+                string row = cells[index];
+                var cellStrings = row.Split('\t').ToList();
+                bool add_topdown_hit = true; //if PTM or accession not found, will not add (show warning)
+                double qValue = Double.TryParse(cellStrings[index_q_value].Split('|')[0], out qValue) ? qValue : -1;
+                List<string> decoy = new List<string> { "N" };
+                //don't read in any decoys for now
+                if (qValue >= 0 && qValue < 0.01 && decoy.All(d => d == "N"))
+                {
+                    List<int> begin = new List<int>();
+                    List<int> end = new List<int>();
+
+                    begin.Add(Int32.TryParse(cellStrings[index_begin], out int j) ? j : 0);
+                    end.Add(Int32.TryParse(cellStrings[index_end], out int k) ? k : 0);
+
+                    List<List<Ptm>> new_ptm_list = new List<List<Ptm>>();
+                    var full_sequences = cellStrings[index_full_sequence].Split('|');
+                    for (int i = 0; i < full_sequences.Length; i++)
+                    {
+                        //First load the variable mods
+                        var variable_mods_string = cellStrings[index_variable_mods];
+                        var unexpected_mods_string = cellStrings[index_unexpected_mods];
+
+                        int variableModCount;
+                        variableModCount = Int32.TryParse(cellStrings[index_variable_mod_count], out variableModCount) ? variableModCount : 0;
+
+                        int unexpectedModCount;
+                        unexpectedModCount = Int32.TryParse(cellStrings[index_unexpected_mod_count], out unexpectedModCount) ? unexpectedModCount : 0;
+
+                        List<Ptm> variable_mods = new List<Ptm>();
+                        if (variableModCount > 0) { variable_mods = get_toppic_variable_ptms(variable_mods_string, toppic_mods); }
+
+                        List<Ptm> unexpected_mods = new List<Ptm>();
+                        if(unexpectedModCount > 0) { unexpected_mods = get_toppic_unexpected_ptms(unexpected_mods_string); }
+
+                        List<Ptm> nterm_ptms = new List<Ptm>();
+                        if (cellStrings[index_nterm_form].Contains("ACETYL"))
+                        {
+                            foreach (Modification mod in Sweet.lollipop.theoretical_database.all_mods_with_mass)
+                            {
+                                if(mod.OriginalId == "Acetyl") { nterm_ptms.Add(new Ptm(1, mod)); }
+                            }
+                        }
+
+                        List<Ptm> allMods = new List<Ptm>();
+                        if(variable_mods.Count() > 0) { allMods.AddRange(variable_mods); }
+                        if(unexpected_mods.Count() > 0) { allMods.AddRange(unexpected_mods); }
+                        if(nterm_ptms.Count() > 0) { allMods.AddRange(nterm_ptms); }
+
+                        if(allMods.Count() == 0) { allMods = new List<Ptm> { new Ptm() }; }
+
+                        lock (unexpected_modifications) { add_unexpected_modifications(unexpected_mods.Select(m => m.modification).ToList(), unexpected_modifications); }
+                    }
+                }
+            });
+
+            List<Modification> to_remove = new List<Modification>();
+            foreach (Modification unexpected_mod in unexpected_modifications)
+            {
+                List<Modification> matches = new List<Modification>();
+                foreach(Modification mod in Sweet.lollipop.theoretical_database.all_mods_with_mass)
+                {
+                    double diff = (double)unexpected_mod.MonoisotopicMass - (double)mod.MonoisotopicMass;
+                    if(Math.Abs(diff) < (1.2 * Sweet.lollipop.maximum_missed_monos))
+                    {
+                        int mm_count = (int)Math.Round(diff);
+                        double adjusted_mass = (double)unexpected_mod.MonoisotopicMass - (mm_count * Lollipop.MONOISOTOPIC_UNIT_MASS);
+                        if(Math.Abs(adjusted_mass - (double)mod.MonoisotopicMass) <= 0.025)
+                        {
+                            matches.Add(mod);
+                        }
+                    }
+                }
+                if(matches.Count() > 0)
+                {
+                    to_remove.Add(unexpected_mod);
+                }
+            }
+            unexpected_modifications = unexpected_modifications.Except(to_remove).ToList();
+
+            int i = 123;
+            return td_hits;
+        }
+
+        private List<Modification> load_toppic_variable_mods()
+        {
+            string mods_filepath = @"C:\Users\johnn\Documents\GitClones\ProteoformSuite\ProteoformSuiteInternal\Mods\toppic_modifications.txt";
+            string[] lines = File.ReadAllLines(mods_filepath);
+            List<Modification> mods = new List<Modification>();
+            for(int i = 0;i<lines.Length;i++)
+            {
+                if (lines[i].Length == 0 || lines[i][0] == '#') { continue; }
+                else
+                {
+                    var split = lines[i].Split(',');
+                    
+
+                    foreach(char aa in split[2])
+                    {
+                        ModificationMotif.TryGetMotif(aa.ToString(), out ModificationMotif mot);
+
+                        Modification mod = new Modification(split[0], split[4], _modificationType: "Common Variable",
+                        _featureType: null, _target: mot, _locationRestriction: split[3], _chemicalFormula: null,
+                        _monoisotopicMass: Convert.ToDouble(split[1]));
+                        mods.Add(mod);
+                    }
+                }
+            }
+            return mods;
+        }
+        private int get_toppic_header_idx(string[] lines)
+        {
+            int headerIdx = 0;
+            for(int i = 0;i<lines.Length;i++)
+            {
+                if (lines[i].Split('\t')[0] == "Data file name")
+                {
+                    headerIdx = i;
+                    break;
+                }
+            }
+            return headerIdx;
+        }
+        private List<Ptm> get_toppic_variable_ptms(string varPtmsCell, List<Modification> toppic_mods)
+        {
+            var split1 = varPtmsCell.Split(':');
+            List<Ptm> variableMods = new List<Ptm>();
+
+            int locs = split1.Length - 1;
+
+            for(int i = 0;i<locs;i++)
+            {
+                var mods = split1[i].Split(';');
+                var localization = split1[i + 1].Split(';')[0];
+
+                int starting_point = 1;
+                if (i == 0) { starting_point = 0; }
+
+                for (int j = starting_point; j < mods.Length; j++)
+                {
+                    bool modMatched = false;
+                    //Now pair the toppic mod with an existing mod
+                    //TODO: actually utilize the localization information provided by Toppic,
+                    // don't have the time to do this now since it would involve a lot of reworking of PS. --@JGPavek
+                    foreach(Modification mod in Sweet.lollipop.theoretical_database.all_mods_with_mass)
+                    {
+                        if(mod.OriginalId == mods[i])
+                        {
+                            variableMods.Add(new Ptm(-1, mod));
+                            modMatched = true;
+                            break;
+                        }
+                    }
+                    if (!modMatched)
+                    {
+                        foreach(Modification mod in toppic_mods)
+                        {
+                            if (mod.OriginalId == mods[i])
+                            {
+                                variableMods.Add(new Ptm(-1, mod));
+                                modMatched = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            return variableMods;
+        }
+        private List<Ptm> get_toppic_unexpected_ptms(string unexPtmsCell)
+        {
+            List<Ptm> unexpected_ptms = new List<Ptm>();
+            var split = unexPtmsCell.Split(';');
+            for(int i = 0;i<split.Length;i++)
+            {
+                var modSplit = split[i].Split(':');
+                double mass = Convert.ToDouble(modSplit[0]);
+
+                ModificationMotif motif;
+                ModificationMotif.TryGetMotif("X", out motif);
+
+                Modification newMod = new Modification(_originalId: Math.Round(mass, 2).ToString(), null, "Common Variable",
+                    null, motif, "Anywhere.", null, mass);
+
+                unexpected_ptms.Add(new Ptm(-1, newMod));
+            }
+            return unexpected_ptms;
+        }
+        private void add_unexpected_modifications(List<Modification> new_mods, List<Modification> existing_mods)
+        {
+            double mass_tol = 0.025;
+            foreach(Modification new_mod in new_mods)
+            {
+                bool matched_mod = false;
+                foreach(Modification existing in existing_mods)
+                {
+                    double diff = (double)new_mod.MonoisotopicMass - (double)existing.MonoisotopicMass;
+                    if(Math.Abs(diff) < (1.2 * Sweet.lollipop.maximum_missed_monos))
+                    {
+                        int estimatedMMs = (int)Math.Round(diff);
+                        double adjustedMass = (double)new_mod.MonoisotopicMass - (estimatedMMs * Lollipop.MONOISOTOPIC_UNIT_MASS);
+                        if (adjustedMass - (double)existing.MonoisotopicMass <= mass_tol)
+                        {
+                            matched_mod = true;
+                        }
+                    }
+                }
+                if (!matched_mod) { existing_mods.Add(new_mod); }
+            }
+        }
+
         private bool add_glycans(int num_to_add, string glycan_id, int location, List<Ptm> ptm_list)
         {
             var mod = Sweet.lollipop.theoretical_database.uniprotModifications.Values
@@ -552,7 +818,7 @@ namespace ProteoformSuiteInternal
                 string ionTypeAndNumber = split[0];
                 Match result = IonParser.Match(ionTypeAndNumber);
 
-                ProductType productType = (ProductType)Enum.Parse(typeof(ProductType), result.Groups[1].Value);
+                Proteomics.Fragmentation.ProductType productType = (Proteomics.Fragmentation.ProductType)Enum.Parse(typeof(Proteomics.Fragmentation.ProductType), result.Groups[1].Value);
 
                 int fragmentNumber = int.Parse(result.Groups[2].Value);
                 int z = int.Parse(split[1]);

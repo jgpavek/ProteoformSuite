@@ -181,6 +181,7 @@ namespace ProteoformSuiteInternal
         MetaMorpheus,
         Biomarker,
         TightAbsoluteMass,
+        Toppic,
         Unknown //not read in if unknown...
     }
 }
