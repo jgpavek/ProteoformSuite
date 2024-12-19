@@ -44,7 +44,7 @@ namespace ProteoformSuiteInternal
 
         #region Public Methods
 
-        public void get_theoretical_proteoforms(string current_directory)
+        public void get_theoretical_proteoforms(string current_directory, List<Modification> unexpected_mods = null)
         {
             //Clear out data from potential previous runs
             foreach (ProteoformCommunity community in Sweet.lollipop.decoy_proteoform_communities.Values)
@@ -55,7 +55,7 @@ namespace ProteoformSuiteInternal
             theoretical_proteins.Clear();
 
             //Read the UniProt-XML and ptmlist
-            List<Modification> all_known_modifications = get_mods(current_directory);
+            List<Modification> all_known_modifications = get_mods(current_directory, unexpected_mods = unexpected_mods);
           
             foreach(var database in Sweet.lollipop.get_files(Sweet.lollipop.input_files, Purpose.ProteinDatabase).ToList())
             {
@@ -113,7 +113,7 @@ namespace ProteoformSuiteInternal
                 make_theoretical_proteoforms();
         }
 
-        public List<Modification> get_mods(string current_directory)
+        public List<Modification> get_mods(string current_directory, List<Modification> unexpected_mods = null)
         {
             var psiModDeserialized = Loaders.LoadPsiMod(Path.Combine(current_directory, "Mods", "PSI-MOD.obo.xml"));
             Dictionary<string, int> formalChargesDictionary = Loaders.GetFormalChargesDictionary(psiModDeserialized);
@@ -133,6 +133,7 @@ namespace ProteoformSuiteInternal
                 }
                 all_known_modifications.AddRange(new_mods);
             }
+            if(unexpected_mods != null) { all_known_modifications.AddRange(unexpected_mods); }
 
             all_known_modifications = new HashSet<Modification>(all_known_modifications).ToList();
             uniprotModifications = make_modification_dictionary(all_known_modifications);

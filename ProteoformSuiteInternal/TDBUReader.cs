@@ -621,11 +621,29 @@ namespace ProteoformSuiteInternal
                         if(allMods.Count() == 0) { allMods = new List<Ptm> { new Ptm() }; }
 
                         lock (unexpected_modifications) { add_unexpected_modifications(unexpected_mods.Select(m => m.modification).ToList(), unexpected_modifications); }
+
+                        string accession = cellStrings[index_protein_accession].Split('|')[1];
+
+                        //Need to convert Toppic full sequence into our format
+                        SpectrumMatch td_hit = new SpectrumMatch(index, aaIsotopeMassList, file, TopDownResultType.Toppic,
+                            accession, full_sequences[i], accession, cellStrings[index_protein_name],
+                            cellStrings[index_base_sequence], begin[0], end[0], allMods, Convert.ToDouble(cellStrings[index_precursor_mass]),
+                            Convert.ToDouble(cellStrings[index_peptide_monoisotopic_mass]), Convert.ToInt32(cellStrings[index_scan_number]),
+                            Convert.ToDouble(cellStrings[index_retention_time]) / 60, cellStrings[index_filepath], Convert.ToDouble(cellStrings[index_q_value]),
+                            -1, -1, new List<MatchedFragmentIon>());
+
+
+                        if (td_hit.begin > 0 && td_hit.end > 0 && td_hit.theoretical_mass > 0 &&
+                            td_hit.reported_mass > 0 && td_hit.ms2ScanNumber > 0
+                             && td_hit.ms2_retention_time > 0 && (td_hit.end - td_hit.begin + 1 == td_hit.sequence.Length))
+                        {
+                            lock (td_hits) td_hits.Add(td_hit);
+                        }
                     }
                 }
             });
 
-            List<Modification> to_remove = new List<Modification>();
+            List<Tuple<Modification,Modification>> to_remove_matched = new List<Tuple<Modification,Modification>>();
             foreach (Modification unexpected_mod in unexpected_modifications)
             {
                 List<Modification> matches = new List<Modification>();
@@ -644,18 +662,21 @@ namespace ProteoformSuiteInternal
                 }
                 if(matches.Count() > 0)
                 {
-                    to_remove.Add(unexpected_mod);
+                    to_remove_matched.Add(Tuple.Create(unexpected_mod, matches.First()));
                 }
             }
-            unexpected_modifications = unexpected_modifications.Except(to_remove).ToList();
+            unexpected_modifications = unexpected_modifications.Except(to_remove_matched.Select(t=>t.Item1).ToList()).ToList();
+            
+            //Need to loop through td_hits and replace unexpected modifications with matches.
 
-            int i = 123;
+
+            Sweet.lollipop.theoretical_database.get_theoretical_proteoforms(Environment.CurrentDirectory, unexpected_modifications);
             return td_hits;
         }
 
         private List<Modification> load_toppic_variable_mods()
         {
-            string mods_filepath = @"C:\Users\johnn\Documents\GitClones\ProteoformSuite\ProteoformSuiteInternal\Mods\toppic_modifications.txt";
+            string mods_filepath = @"D:\Johnny\GitClones\ProteoformSuite\ProteoformSuiteInternal\Mods\toppic_modifications.txt";
             string[] lines = File.ReadAllLines(mods_filepath);
             List<Modification> mods = new List<Modification>();
             for(int i = 0;i<lines.Length;i++)
@@ -702,7 +723,10 @@ namespace ProteoformSuiteInternal
             for(int i = 0;i<locs;i++)
             {
                 var mods = split1[i].Split(';');
-                var localization = split1[i + 1].Split(';')[0];
+                var localization = split1[i + 1].Split(';')[0].Trim('[',']');
+                int loc = 0;
+                if(localization.Split('-').Length == 2) { loc = Int32.Parse(localization.Split("-")[0]); }
+                else if(localization.Split('-').Length == 1) { loc = Int32.Parse((localization.Split("-")[0])); }
 
                 int starting_point = 1;
                 if (i == 0) { starting_point = 0; }
@@ -717,7 +741,7 @@ namespace ProteoformSuiteInternal
                     {
                         if(mod.OriginalId == mods[i])
                         {
-                            variableMods.Add(new Ptm(-1, mod));
+                            variableMods.Add(new Ptm(loc, mod));
                             modMatched = true;
                             break;
                         }
@@ -728,7 +752,7 @@ namespace ProteoformSuiteInternal
                         {
                             if (mod.OriginalId == mods[i])
                             {
-                                variableMods.Add(new Ptm(-1, mod));
+                                variableMods.Add(new Ptm(loc, mod));
                                 modMatched = true;
                                 break;
                             }
@@ -747,13 +771,20 @@ namespace ProteoformSuiteInternal
                 var modSplit = split[i].Split(':');
                 double mass = Convert.ToDouble(modSplit[0]);
 
+                var localization = modSplit[i + 1].Split(';')[0].Trim('[', ']');
+                int loc = 0;
+                if (localization.Split('-').Length == 2) { loc = Int32.Parse(localization.Split("-")[0]); }
+                else if (localization.Split('-').Length == 1) { loc = Int32.Parse((localization.Split("-")[0])); }
+
+
+
                 ModificationMotif motif;
                 ModificationMotif.TryGetMotif("X", out motif);
 
-                Modification newMod = new Modification(_originalId: Math.Round(mass, 2).ToString(), null, "Common Variable",
+                Modification newMod = new Modification(_originalId: Math.Round(mass, 2).ToString(), null, "Common",
                     null, motif, "Anywhere.", null, mass);
 
-                unexpected_ptms.Add(new Ptm(-1, newMod));
+                unexpected_ptms.Add(new Ptm(loc, newMod));
             }
             return unexpected_ptms;
         }

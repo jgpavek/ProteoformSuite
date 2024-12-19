@@ -318,6 +318,21 @@ namespace Test
         }
 
         [Test]
+        public void TestTopdownReaderToppic()
+        {
+            // unlabeled
+            Sweet.lollipop = new Lollipop();
+            Sweet.lollipop.neucode_labeled = false;
+            Sweet.lollipop.carbamidomethylation = false;
+            Sweet.lollipop.clear_td();
+            Sweet.lollipop.enter_input_files(new string[] { @"D:\Johnny\SmithLab\Mehrdad_data\combined_b_f_2_ms2_toppic_proteoform_single.tsv" }, Lollipop.acceptable_extensions[3], Lollipop.file_types[3], Sweet.lollipop.input_files, false);
+            Sweet.lollipop.enter_input_files(new string[] { @"D:\Johnny\SmithLab\Mehrdad_data\zebrafish.xml" }, Lollipop.acceptable_extensions[2], Lollipop.file_types[2], Sweet.lollipop.input_files, false);
+            Sweet.lollipop.decoy_databases = 1;
+            Sweet.lollipop.theoretical_database.get_theoretical_proteoforms(TestContext.CurrentContext.TestDirectory);
+            Sweet.lollipop.read_in_td_hits();
+        }
+
+        [Test]
         public void TestTopdownAmbiguity()
         {
             Sweet.lollipop = new Lollipop();

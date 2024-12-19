@@ -130,7 +130,8 @@ namespace ProteoformSuiteInternal
             }
             foreach(var ptm in allModsOneIsNTerminus_dictionary)
             {
-                allModsOneIsNTerminus.Add(ptm.Key - (begin - 2), new Modification(String.Join(",", ptm.Value.Select(m => UnlocalizedModification.LookUpId(m)).OrderBy(m => m)) + " on X"));
+                //allModsOneIsNTerminus.Add(ptm.Key - (begin - 2), new Modification(String.Join(",", ptm.Value.Select(m => UnlocalizedModification.LookUpId(m)).OrderBy(m => m)) + " on X"));
+                allModsOneIsNTerminus.Add(ptm.Key - (begin - 2), ptm.Value.First());
             }
             Protein protein = new Protein(sequence, accession);
             PeptideWithSetModifications peptide = new PeptideWithSetModifications(protein, new DigestionParams(), 1, sequence.Length, CleavageSpecificity.Full, "", 0, allModsOneIsNTerminus, 0);

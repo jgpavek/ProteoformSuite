@@ -429,7 +429,15 @@ namespace ProteoformSuiteInternal
         {
             List<TopDownProteoform> topdown_proteoforms = new List<TopDownProteoform>();
             //get topdown hits that meet criteria
-            List<SpectrumMatch> remaining_td_hits = top_down_hits.Where(h => h.score >= min_score_td && (h.tdResultType == TopDownResultType.MetaMorpheus || (biomarker && h.tdResultType == TopDownResultType.Biomarker) || (tight_abs_mass && h.tdResultType == TopDownResultType.TightAbsoluteMass))).OrderBy(h => h.ambiguous_matches.Count).ThenByDescending(h => h.score).ThenBy(h => h.qValue).ThenBy(h => h.reported_mass).ToList();
+            List<SpectrumMatch> remaining_td_hits = new List<SpectrumMatch>();
+            if(top_down_hits.First().tdResultType != TopDownResultType.Toppic)
+            {
+                remaining_td_hits = top_down_hits.Where(h => h.score >= min_score_td && (h.tdResultType == TopDownResultType.MetaMorpheus || (biomarker && h.tdResultType == TopDownResultType.Biomarker) || (tight_abs_mass && h.tdResultType == TopDownResultType.TightAbsoluteMass))).OrderBy(h => h.ambiguous_matches.Count).ThenByDescending(h => h.score).ThenBy(h => h.qValue).ThenBy(h => h.reported_mass).ToList();
+            }
+            else
+            {
+                remaining_td_hits = top_down_hits.Where(h => h.qValue <= 0.01).ToList();
+            }
 
             List<string> unique_proteoform_ids = remaining_td_hits.Select(h => h.accession.Split('-')[0] + "_" + h.pfr_accession).Distinct().ToList();
             Parallel.ForEach(unique_proteoform_ids, pfr =>
