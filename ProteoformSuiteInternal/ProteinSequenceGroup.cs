@@ -1,6 +1,7 @@
 ﻿using Proteomics;
 using System.Collections.Generic;
 using System.Linq;
+using Modification = Omics.Modifications.Modification;
 
 namespace ProteoformSuiteInternal
 {

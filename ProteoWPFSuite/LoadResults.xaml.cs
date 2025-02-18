@@ -12,6 +12,7 @@ using System.Diagnostics;
 using System.ComponentModel;
 using MassSpectrometry;
 using System.Windows.Media.Animation;
+using Readers;
 
 namespace ProteoWPFSuite
 {
@@ -234,7 +235,7 @@ namespace ProteoWPFSuite
 
                 // In "3. Load Data Using Drop Down Menu"
                 cmb_loadTable1.IsEnabled = true;
-                for (int i = 0; i < 4; i++)
+                for (int i = 0; i < 5; i++)
                     cmb_loadTable1.Items.Add(Lollipop.file_lists[i]);
                 cmb_loadTable1.Items.Add(Lollipop.file_lists[7]);
                 cmb_loadTable1.SelectedIndex = 0;
@@ -258,7 +259,7 @@ namespace ProteoWPFSuite
 
                 // In "3. Load Data Using Drop Down Menu"
                 cmb_loadTable1.IsEnabled = true;
-                for (int i = 4; i < 7; i++)
+                for (int i = 5; i < 8; i++)
                     cmb_loadTable1.Items.Add(Lollipop.file_lists[i]);
                 cmb_loadTable1.SelectedIndex = 0;
 
@@ -549,7 +550,7 @@ namespace ProteoWPFSuite
             }
             if (Sweet.lollipop.input_files.Any(f => f.extension == ".raw"))
             {
-                MessageBoxResult d4 = MessageBox.Show(ThermoRawFileReader.ThermoRawFileReaderLicence.ThermoLicenceText + "\nIn order to search Thermo .raw files, you must agree to the above terms. Do you agree to the above terms?",
+                MessageBoxResult d4 = MessageBox.Show(ThermoRawFileReaderLicence.ThermoLicenceText + "\nIn order to search Thermo .raw files, you must agree to the above terms. Do you agree to the above terms?",
                     "Thermo", MessageBoxButton.YesNo);
                 if (d4 == MessageBoxResult.No) return;
             }
@@ -648,5 +649,15 @@ namespace ProteoWPFSuite
             Sweet.lollipop.cali_rt_tolerance = Convert.ToDouble(nud_cali_rt_tolerance.Value);
         }
         #endregion Chemical Calibration Private Methods
+
+        private void rb_standardOptions_Checked(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void rb_deconvolution_Checked(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }

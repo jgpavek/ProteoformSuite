@@ -1,5 +1,6 @@
 ﻿using System;
 using Proteomics;
+using Modification = Omics.Modifications.Modification;
 
 namespace ProteoformSuiteInternal
 {

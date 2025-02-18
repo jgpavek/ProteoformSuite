@@ -560,7 +560,8 @@ namespace ProteoWPFSuite
             switch (item.Title)
             {
                 case "Load Results":
-                    // not yet
+                    Mouse.OverrideCursor = Cursors.Wait;
+
                     break;
 
                 case "Theoretical Database":

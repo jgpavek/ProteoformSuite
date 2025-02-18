@@ -7,6 +7,7 @@ using System.Linq;
 using Chemistry;
 using DocumentFormat.OpenXml.Wordprocessing;
 using System.Threading.Tasks;
+using Modification = Omics.Modifications.Modification;
 
 namespace ProteoformSuiteInternal
 {

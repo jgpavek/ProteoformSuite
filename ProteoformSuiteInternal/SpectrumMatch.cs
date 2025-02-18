@@ -1,11 +1,13 @@
 ﻿using MassSpectrometry;
-using Proteomics.Fragmentation;
+using Omics.Fragmentation;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using Chemistry;
 using Proteomics.ProteolyticDigestion;
 using Proteomics;
+using Omics.Digestion;
+using Modification = Omics.Modifications.Modification;
 
 namespace ProteoformSuiteInternal
 {

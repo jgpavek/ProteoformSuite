@@ -1,4 +1,5 @@
-﻿using Proteomics;
+﻿using Omics.Modifications;
+using Proteomics;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UsefulProteomicsDatabases;
+using Modification = Omics.Modifications.Modification;
 
 namespace ProteoformSuiteInternal
 {
@@ -69,8 +71,7 @@ namespace ProteoformSuiteInternal
                 else if (database.extension == ".fasta")
                 {
                     lock (theoretical_proteins)
-                        theoretical_proteins.Add(database, ProteinDbLoader.LoadProteinFasta(database.complete_path, true, DecoyType.None, database.ContaminantDB, ProteinDbLoader.UniprotAccessionRegex, ProteinDbLoader.UniprotFullNameRegex, ProteinDbLoader.UniprotFullNameRegex, ProteinDbLoader.UniprotGeneNameRegex,
-                   ProteinDbLoader.UniprotOrganismRegex, out var dbErrors).ToArray());
+                        theoretical_proteins.Add(database, ProteinDbLoader.LoadProteinFasta(database.complete_path, true, DecoyType.None, false, out var dbErrors).ToArray());
                 }
             }
 

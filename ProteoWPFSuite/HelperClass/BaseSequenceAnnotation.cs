@@ -6,6 +6,7 @@ using System.Windows.Shapes;
 using System;
 using System.Windows.Input;
 using System.Windows.Media.Animation;
+using Modification = Omics.Modifications.Modification;
 
 namespace ProteoWPFSuite
 {

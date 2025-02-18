@@ -35,7 +35,7 @@
                     x:Name="rb_standardOptions" 
                     Click="rb_standardOptions_CheckedChanged" 
                     HorizontalAlignment="Left"
-                    Content="Standard" />
+                    Content="Standard" Checked="rb_standardOptions_Checked" />
                 <RadioButton 
                     x:Name="rb_chemicalCalibration" 
                     Click="rb_chemicalCalibration_CheckedChanged" 

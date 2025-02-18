@@ -1,7 +1,9 @@
-﻿using System;
+﻿using FlashLFQ;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using MassSpectrometry;
 
 namespace ProteoformSuiteInternal
 {
@@ -119,6 +121,46 @@ namespace ProteoformSuiteInternal
             this.intensity_sum = intensity_reported;
             this.accepted = true;
             this.charge_states = new List<ChargeState>();
+        }
+
+        public Component(MassSpectrometry.IsotopicEnvelope env, InputFile inputFile, double retention_time, int scan, int component_id)
+        {
+            this.accepted = true;
+            this.input_file = inputFile;
+            this.id = input_file.UniqueId.ToString() + "_" + component_id.ToString();
+            this.reported_monoisotopic_mass = env.MonoisotopicMass;
+            this.weighted_monoisotopic_mass = env.MonoisotopicMass;
+            this.intensity_reported = env.TotalIntensity;
+            this.min_scan = scan;
+            this.max_scan = scan;
+            this.min_rt = retention_time;
+            this.max_rt = retention_time;
+            this.rt_apex = retention_time;
+            double most_abundant_mz = env.Peaks.OrderByDescending(p => p.intensity).First().mz;
+            this.charge_states = new List<ChargeState> { new ChargeState(env.Charge, env.TotalIntensity, most_abundant_mz) };
+        }
+
+        public Component(List<MassSpectrometry.IsotopicEnvelope> envelopes, InputFile inputFile, double retention_time, int scan, int component_id)
+        {
+            this.accepted = true;
+            this.input_file = inputFile;
+            this.id = input_file.UniqueId.ToString() + "_" + component_id.ToString();
+            this.reported_monoisotopic_mass = envelopes[0].MonoisotopicMass;
+            this.weighted_monoisotopic_mass = envelopes[0].MonoisotopicMass;
+            this.intensity_reported = envelopes.Sum(e=> e.TotalIntensity);
+            this.intensity_sum = this.intensity_reported;
+            this.min_scan = scan;
+            this.max_scan = scan;
+            this.min_rt = retention_time;
+            this.max_rt = retention_time;
+            this.rt_apex = retention_time;
+
+            this.charge_states = new List<ChargeState>();
+            foreach(MassSpectrometry.IsotopicEnvelope env in envelopes)
+            {
+                double most_abundant_mz = envelopes[0].Peaks.OrderByDescending(p => p.intensity).First().mz;
+                this.charge_states.Add(new ChargeState(env.Charge, env.TotalIntensity, most_abundant_mz));
+            }
         }
 
         #endregion Constructors

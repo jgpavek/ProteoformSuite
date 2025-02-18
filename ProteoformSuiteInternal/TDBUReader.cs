@@ -5,9 +5,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using Proteomics.ProteolyticDigestion;
 using Chemistry;
-using Proteomics.Fragmentation;
+using Omics.Fragmentation;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using Modification = Omics.Modifications.Modification;
+using Omics.Fragmentation.Peptide;
 
 namespace ProteoformSuiteInternal
 {
@@ -364,7 +366,7 @@ namespace ProteoformSuiteInternal
                             var ptm_list = modsIdentifier.AllModsOneIsNterminus;
 
                             //for each  entry in ptm_list make a new Ptm and add it to the new_ptm_list 
-                            foreach (KeyValuePair<int, Proteomics.Modification> entry in ptm_list)
+                            foreach (KeyValuePair<int, Modification> entry in ptm_list)
                             {
                                 string mod_type = entry.Value.ModificationType;
                                 if (glycan && entry.Value.ModificationType == "N-Glycosylation")
@@ -587,7 +589,7 @@ namespace ProteoformSuiteInternal
                     aminoAcidPosition,
                     neutralLoss);
 
-                matchedIons.Add(new MatchedFragmentIon(ref p, mz, 1.0, z));
+                matchedIons.Add(new MatchedFragmentIon(p, mz, 1.0, z));
             }
 
             return matchedIons;

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
@@ -18,12 +18,13 @@
     <PackageReference Include="Accord" Version="3.8.2-alpha" />
     <PackageReference Include="DocumentFormat.OpenXml" Version="2.11.0" />
     <PackageReference Include="FastMember.Signed" Version="1.5.0" />
-    <PackageReference Include="mzLib" Version="1.0.472" />
+    <PackageReference Include="mzLib" Version="1.0.559" />
     <PackageReference Include="SharpLearning.Common.Interfaces" Version="0.31.7" />
     <PackageReference Include="SharpLearning.CrossValidation" Version="0.31.7" />
     <PackageReference Include="SharpLearning.Metrics" Version="0.31.7" />
     <PackageReference Include="System.IO.FileSystem.Primitives" Version="4.3.0" />
     <PackageReference Include="System.IO.Packaging" Version="5.0.0-preview.5.20278.1" />
+    <PackageReference Include="TopDownProteomics" Version="0.0.298" />
   </ItemGroup>
 
   <ItemGroup>

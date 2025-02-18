@@ -1,7 +1,6 @@
 ﻿using Accord.Math;
 using Chemistry;
 using IO.MzML;
-using ThermoRawFileReader;
 using MassSpectrometry;
 using System;
 using System.Collections.Generic;
@@ -14,6 +13,10 @@ using System.Threading.Tasks;
 using UsefulProteomicsDatabases;
 using System.Text;
 using Proteomics;
+using Readers;
+using pepXML.Generated;
+using MzLibUtil;
+using DocumentFormat.OpenXml.Math;
 
 namespace ProteoformSuiteInternal
 {
@@ -50,6 +53,7 @@ namespace ProteoformSuiteInternal
         {
             "Deconvolution Results for Identification (.xlsx, .tsv, .txt)",
             "Deconvolution Results for Quantification (.xlsx, .tsv. txt)",
+            "Spectra Files for Full Processing (.raw, .mzML)",
             "Protein Databases (.xml, .xml.gz, .fasta)",
             "Top-Down Hit Results (.xlsx, .psmtsv )",
             "Spectra Files (.raw, .mzML)",
@@ -63,6 +67,7 @@ namespace ProteoformSuiteInternal
         {
             new List<string> { ".xlsx", ".tsv", ".txt" },
             new List<string> { ".xlsx", ".tsv", ".txt"  },
+            new List<string> {".raw", ".mzML", ".mzml", ".MZML"},
             new List<string> { ".xml", ".gz", ".fasta" },
             new List<string> { ".xlsx" , ".psmtsv"},
             new List<string> {".raw", ".mzML", ".mzml", ".MZML"},
@@ -76,6 +81,7 @@ namespace ProteoformSuiteInternal
         {
             "Deconvolution Files (*.xlsx, *.tsv, *.txt) | *.xlsx;*.tsv;*.txt",
             "Deconvolution Files (*.xlsx, *.tsv, *.txt) | *.xlsx;*.tsv;*.txt",
+            "Spectra Files for Full Processing (*.raw, *.mzML) | *.raw;*.mzML",
             "Protein Databases (*.xml, *.xml.gz, *.fasta) | *.xml;*.xml.gz;*.fasta",
             "Top-Down Hit Files (*.xlsx, *.psmtsv) | *.xlsx;*.psmtsv",
             "Spectra Files (*.raw, *.mzML) | *.raw;*.mzML",
@@ -88,6 +94,7 @@ namespace ProteoformSuiteInternal
         {
             new List<Purpose> { Purpose.Identification },
             new List<Purpose> { Purpose.Quantification },
+            new List<Purpose> { Purpose.DeconThenIdentification },
             new List<Purpose> { Purpose.ProteinDatabase },
             new List<Purpose> { Purpose.TopDown },
             new List<Purpose> { Purpose.SpectraFile },
@@ -160,6 +167,12 @@ namespace ProteoformSuiteInternal
                         : file.reader.read_components_from_tsv(file, false);
                 lock (destination) destination.AddRange(someComponents);
             });
+
+            List<InputFile> deconThenLoad = input_files.Where(f => f.purpose == Purpose.DeconThenIdentification).ToList();
+            if(deconThenLoad.Count > 0)
+            {
+                perform_isodec_deconvolution(destination);
+            }
 
             if (neucode_labeled && purpose == Purpose.Identification)
             {
@@ -249,6 +262,121 @@ namespace ProteoformSuiteInternal
             {
                 return "No files deconvoluted. Ensure correct file locations and try again.";
             }
+        }
+
+        public string perform_isodec_deconvolution(List<Component> destination)
+        {
+            int successfully_deconvoluted_files = 0;
+            Loaders.LoadElements();
+
+            int comp_id = 0;
+
+            foreach (InputFile f in input_files.Where(f => f.purpose == Purpose.DeconThenIdentification))
+            {
+                string filelocation = Path.Combine(Path.GetDirectoryName(f.complete_path), Path.GetFileName(f.complete_path));
+
+
+                MsDataFile reader = MsDataFileReader.GetDataFile(filelocation);
+                List<MsDataScan> ms1_scans = reader.GetMS1Scans().ToList();
+
+                IsoDecDeconvolutionParameters deconParams = new IsoDecDeconvolutionParameters();
+                deconParams.CssThreshold = (float)minCC;
+
+                foreach(MsDataScan scan in ms1_scans)
+                {
+                    List<IsotopicEnvelope> results = Deconvoluter.Deconvolute(scan, deconParams).ToList();
+                    List<Component> components = AggregateEnvelopes(results, f, scan.RetentionTime, scan.OneBasedScanNumber, ref  comp_id);
+                    destination.AddRange(components);
+                }
+                successfully_deconvoluted_files++;
+            }
+
+            if (successfully_deconvoluted_files == 1)
+            {
+                return "Successfully deconvoluted " + successfully_deconvoluted_files + " raw file.";
+            }
+            else if (successfully_deconvoluted_files > 1)
+            {
+                return "Successfully deconvoluted " + successfully_deconvoluted_files + " raw files.";
+            }
+            else
+            {
+                return "No files deconvoluted. Ensure correct file locations and try again.";
+            }
+        }
+
+        private List<Component> AggregateEnvelopes(List<IsotopicEnvelope> envs, InputFile file, double rt, int scan_number, ref int current_id)
+        {
+            //First aggregate the multiple monoisos into a single envelope
+            List<IsotopicEnvelope> reducedEnvelopes = new List<IsotopicEnvelope>();
+            List<IsotopicEnvelope> removed = new List<IsotopicEnvelope>();
+            foreach(IsotopicEnvelope envelope1 in envs)
+            {
+                if(reducedEnvelopes.Contains(envelope1) || removed.Contains(envelope1))
+                {
+                    continue;
+                }
+
+                else
+                {
+                    reducedEnvelopes.Add(envelope1);
+                    foreach (IsotopicEnvelope envelope2 in envs)
+                    {
+                        if (envelope1 == envelope2 ||
+                            reducedEnvelopes.Contains(envelope2) ||
+                            removed.Contains(envelope2))
+
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            if(envelope1.ToString().Equals(envelope2.ToString()))
+                            {
+                                removed.Add(envelope2);
+                            }
+                        }
+                    }
+                }
+            }
+            //Now that we've dealt with the cases where multiple monoisotopics are returned, we can aggregate
+            List<Component> components = new List<Component>();
+            List<IsotopicEnvelope> alreadyAggregated = new List<IsotopicEnvelope>();
+            PpmTolerance tol = new PpmTolerance(mass_tolerance);
+
+            foreach(IsotopicEnvelope env1 in reducedEnvelopes)
+            {
+                if (alreadyAggregated.Contains(env1)) { continue; }
+                else
+                {
+                    List<IsotopicEnvelope> to_aggregate = new List<IsotopicEnvelope> { env1 };
+                    alreadyAggregated.Add(env1);
+                    List<double> env1_masses = new List<double>();
+                    for (int i = 0; i <= maximum_missed_monos; i++)
+                    {
+                        if (i == 0) { env1_masses.Add(env1.MonoisotopicMass); }
+                        else { env1_masses.Add(env1.MonoisotopicMass + i * MONOISOTOPIC_UNIT_MASS); env1_masses.Add(env1.MonoisotopicMass - i * MONOISOTOPIC_UNIT_MASS); }
+                    }
+                    foreach (IsotopicEnvelope env2 in reducedEnvelopes)
+                    {
+                        if (alreadyAggregated.Contains(env2) || env1 == env2) { continue; }
+                        else
+                        {
+                            foreach(double mass in env1_masses)
+                            {
+                                if(tol.Within(env2.MonoisotopicMass, mass)) { to_aggregate.Add(env2); alreadyAggregated.Add(env2); break; }
+                            }
+                        }
+                    }
+                    if(to_aggregate.Count > 0)
+                    {
+                        components.Add(new Component(to_aggregate, file, rt, scan_number, current_id));
+                        current_id++;
+                    }
+                }
+            }
+
+            return components; ;
         }
 
         #endregion DECONVOLUTION
@@ -698,16 +826,50 @@ namespace ProteoformSuiteInternal
 
         public IAggregatable find_next_root(List<IAggregatable> ordered, List<IAggregatable> running)
         {
-            return ordered.FirstOrDefault(c =>
-                running.All(d =>
-                    c.weighted_monoisotopic_mass < d.weighted_monoisotopic_mass - 20 || c.weighted_monoisotopic_mass > d.weighted_monoisotopic_mass + 20));
+            if (ordered == null || running == null)
+            {
+                return null;
+            }
+            else
+            {
+                try
+                {
+                    return ordered.FirstOrDefault(c =>
+                        c != null &&
+                        running.All(d =>
+                        d != null &&
+                        (c.weighted_monoisotopic_mass < d.weighted_monoisotopic_mass - 20 ||
+                        c.weighted_monoisotopic_mass > d.weighted_monoisotopic_mass + 20)));
+                }
+                catch (Exception e)
+                {
+                    return null;
+                }
+            }
         }
 
         public IAggregatable find_next_root(List<IAggregatable> ordered, List<ExperimentalProteoform> running)
-        {
-            return ordered.FirstOrDefault(c =>
-                running.All(d =>
-                    c.weighted_monoisotopic_mass < d.root.weighted_monoisotopic_mass - 20 || c.weighted_monoisotopic_mass > d.root.weighted_monoisotopic_mass + 20));
+        {   
+            if (ordered == null || running == null)
+            {
+                return null;
+            }
+            else
+            {
+                try
+                {
+                    return ordered.FirstOrDefault(c =>
+                        c != null &&
+                        running.All(d =>
+                        d != null && d.root != null &&
+                        (c.weighted_monoisotopic_mass < d.root.weighted_monoisotopic_mass - 20 ||
+                        c.weighted_monoisotopic_mass > d.root.weighted_monoisotopic_mass + 20)));
+                }
+                catch(Exception e)
+                {
+                    return null;
+                }
+            }
         }
 
         public ExperimentalProteoform find_next_root(List<ExperimentalProteoform> ordered, List<ExperimentalProteoform> running)
@@ -1290,9 +1452,9 @@ namespace ProteoformSuiteInternal
                 if (Sweet.lollipop.td_hits_calibration.Any(f => f.filename == raw_file.filename))
                 {
                     MsDataFile myMsDataFile = Path.GetExtension(raw_file.complete_path) == ".raw" ?
-                        ThermoRawFileReaderData.LoadAllStaticData(raw_file.complete_path) :
+                        ThermoRawFileReader.LoadAllStaticData(raw_file.complete_path) :
                         null;
-                    if (myMsDataFile == null) myMsDataFile = Mzml.LoadAllStaticData(raw_file.complete_path);
+                    if (myMsDataFile == null) myMsDataFile = Readers.Mzml.LoadAllStaticData(raw_file.complete_path);
                     Parallel.ForEach(Sweet.lollipop.td_hits_calibration.Where(f => f.filename == raw_file.filename).ToList(), hit =>
                     {
                         int scanNum = myMsDataFile.GetClosestOneBasedSpectrumNumber(hit.ms2_retention_time);

@@ -84,6 +84,7 @@ namespace ProteoformSuiteInternal
     {
         Identification,
         Quantification,
+        DeconThenIdentification,
         BottomUp,
         TopDown,
         SpectraFile,

@@ -9,7 +9,8 @@ using System.Windows;
 using System.Windows.Media;
 using ProteoformSuiteInternal;
 using Proteomics;
-using Proteomics.Fragmentation;
+using Omics.Fragmentation;
+using Modification = Omics.Modifications.Modification;
 
 namespace ProteoWPFSuite
 {
